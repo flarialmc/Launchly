@@ -1,23 +1,20 @@
 package com.zeuroux.launchly.activities
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.Box
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.zeuroux.launchly.LaunchlyApp
 import com.zeuroux.launchly.ui.AppShell
+import com.zeuroux.launchly.ui.LaunchlyLoadingScreen
 import com.zeuroux.launchly.ui.OnboardingScreen
 import com.zeuroux.launchly.ui.theme.LaunchlyTheme
 import com.zeuroux.launchly.viewmodel.AddVersionViewModel
@@ -30,12 +27,13 @@ import com.zeuroux.launchly.viewmodel.SettingsViewModel
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.BLACK)
+        )
         setContent {
             LaunchlyTheme {
-                Surface(Modifier.fillMaxSize()) {
-                    LaunchlyRoot()
-                }
+                LaunchlyRoot()
             }
         }
     }
@@ -57,9 +55,7 @@ class MainActivity : ComponentActivity() {
         }
 
         when {
-            onboardingState.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            onboardingState.loading -> LaunchlyLoadingScreen()
             !onboardingState.complete -> OnboardingScreen(
                 state = onboardingState,
                 onSignIn = startLogin,

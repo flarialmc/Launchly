@@ -82,6 +82,7 @@
     <string name="diagnostics_failed">The diagnostic report could not be saved.</string>
     <string name="link_unavailable">No app is available to open this link.</string>
     <string name="refresh">Refresh</string>
+    <string name="loading">Loading…</string>
     <string name="status_queued">Queued</string>
     <string name="status_downloading">Downloading</string>
     <string name="status_paused">Paused</string>

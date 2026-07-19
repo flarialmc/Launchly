@@ -15,12 +15,15 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.lifecycle.lifecycleScope
 import androidx.core.net.toUri
 import com.zeuroux.launchly.BuildConfig
 import com.zeuroux.launchly.LaunchlyApp
 import com.zeuroux.launchly.auth.AuthResult
 import com.zeuroux.launchly.auth.AuthSession
+import com.zeuroux.launchly.ui.LaunchlyLoadingScreen
+import com.zeuroux.launchly.ui.theme.LaunchlyTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -43,6 +46,9 @@ class LoginActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
+        setContent {
+            LaunchlyTheme { LaunchlyLoadingScreen() }
+        }
         lifecycleScope.launch {
             clearCookies()
             if (!isFinishing) createWebView()

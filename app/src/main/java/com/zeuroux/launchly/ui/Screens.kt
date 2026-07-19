@@ -16,49 +16,39 @@ import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationRail
-import androidx.compose.material3.NavigationRailItem
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,6 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -79,13 +70,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import com.zeuroux.launchly.LaunchlyApp
 import com.zeuroux.launchly.R
 import com.zeuroux.launchly.auth.AuthState
@@ -113,13 +98,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
-private enum class Route(val path: String, val label: Int, val icon: Int) {
-    LIBRARY("library", R.string.library, R.drawable.ic_list),
-    DOWNLOADS("downloads", R.string.downloads, R.drawable.ic_download),
-    SETTINGS("settings", R.string.settings, R.drawable.ic_settings),
-    ADD_VERSION("add-version", R.string.add_version, R.drawable.ic_add)
-}
-
 @Composable
 fun OnboardingScreen(
     state: OnboardingUiState,
@@ -128,174 +106,108 @@ fun OnboardingScreen(
     onDismissReset: () -> Unit
 ) {
     val context = LocalContext.current
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().testTag("onboarding"),
-        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        item {
-            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.height(12.dp))
-            Text(stringResource(R.string.onboarding_title), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-        }
-        item { Text(stringResource(R.string.onboarding_body), style = MaterialTheme.typography.bodyLarge) }
-        item {
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
-                Text(stringResource(R.string.onboarding_unofficial), Modifier.padding(20.dp))
-            }
-        }
-        item {
-            when (val auth = state.auth) {
-                is AuthState.Authenticated -> {
-                    Text(stringResource(R.string.signed_in_as, auth.session.displayName ?: auth.session.email))
-                    Spacer(Modifier.height(12.dp))
-                    Button(onContinue, Modifier.fillMaxWidth().testTag("finish_setup")) {
-                        Text(stringResource(R.string.finish_setup))
+    LaunchlyBackdrop {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(18.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().widthIn(max = 620.dp).fillMaxHeight(0.92f),
+                color = LaunchlyDesign.SurfacePrimary,
+                contentColor = LaunchlyDesign.TextPrimary,
+                shape = LaunchlyDesign.PanelShape
+            ) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().testTag("onboarding"),
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 26.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    item { LaunchlyBrandRow(Modifier.fillMaxWidth()) }
+                    item {
+                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                stringResource(R.string.onboarding_title),
+                                style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                stringResource(R.string.onboarding_body),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = LaunchlyDesign.TextMuted
+                            )
+                        }
+                    }
+                    item {
+                        LaunchlyRaisedCard(Modifier.fillMaxWidth()) {
+                            Text(
+                                stringResource(R.string.onboarding_unofficial),
+                                modifier = Modifier.padding(18.dp),
+                                color = LaunchlyDesign.TextSecondary,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                    item {
+                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            when (val auth = state.auth) {
+                                is AuthState.Authenticated -> {
+                                    Text(
+                                        stringResource(
+                                            R.string.signed_in_as,
+                                            auth.session.displayName ?: auth.session.email
+                                        ),
+                                        color = LaunchlyDesign.TextSecondary
+                                    )
+                                    LaunchlyPrimaryButton(
+                                        onClick = onContinue,
+                                        modifier = Modifier.fillMaxWidth().testTag("finish_setup")
+                                    ) {
+                                        Text(stringResource(R.string.finish_setup))
+                                    }
+                                }
+                                else -> LaunchlyPrimaryButton(
+                                    onClick = onSignIn,
+                                    modifier = Modifier.fillMaxWidth().testTag("sign_in")
+                                ) {
+                                    Text(stringResource(R.string.sign_in_google))
+                                }
+                            }
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            TextButton({ openUrl(context, PRIVACY_URL) }) {
+                                Text(stringResource(R.string.privacy_policy), color = LaunchlyDesign.TextSecondary)
+                            }
+                            TextButton({ openUrl(context, DISCLAIMER_URL) }) {
+                                Text(stringResource(R.string.disclaimer), color = LaunchlyDesign.TextSecondary)
+                            }
+                        }
                     }
                 }
-                else -> Button(onSignIn, Modifier.fillMaxWidth().testTag("sign_in")) {
-                    Text(stringResource(R.string.sign_in_google))
-                }
-            }
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton({ openUrl(context, PRIVACY_URL) }) { Text(stringResource(R.string.privacy_policy)) }
-                TextButton({ openUrl(context, DISCLAIMER_URL) }) { Text(stringResource(R.string.disclaimer)) }
             }
         }
     }
     if (state.showResetNotice) {
-        AlertDialog(
+        LaunchlyDialog(
             onDismissRequest = onDismissReset,
-            title = { Text(stringResource(R.string.reset_notice_title)) },
-            text = { Text(stringResource(R.string.reset_notice_body)) },
-            confirmButton = { TextButton(onDismissReset) { Text(stringResource(R.string.close)) } }
+            title = stringResource(R.string.reset_notice_title),
+            message = stringResource(R.string.reset_notice_body),
+            confirmText = stringResource(R.string.close),
+            onConfirm = onDismissReset
         )
     }
 }
 
 @Composable
-fun AppShell(
-    app: LaunchlyApp,
-    libraryViewModel: LibraryViewModel,
-    downloadsViewModel: DownloadsViewModel,
-    settingsViewModel: SettingsViewModel,
-    addVersionViewModel: AddVersionViewModel,
-    onSignIn: () -> Unit
-) {
-    val navController = rememberNavController()
-    val backStackEntry by navController.currentBackStackEntryAsState()
-    val route = backStackEntry?.destination?.route ?: Route.LIBRARY.path
-    val snackbar = remember { SnackbarHostState() }
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val wide = maxWidth >= 600.dp
-        Row(Modifier.fillMaxSize()) {
-            if (wide && route != Route.ADD_VERSION.path) {
-                MainNavigationRail(navController, route)
-            }
-            Scaffold(
-                modifier = Modifier.weight(1f),
-                topBar = {
-                    TopAppBar(
-                        title = { Text(stringResource(Route.entries.firstOrNull { it.path == route }?.label ?: R.string.app_name)) },
-                        navigationIcon = {
-                            if (route == Route.ADD_VERSION.path) {
-                                TextButton({ navController.popBackStack() }) { Text(stringResource(R.string.back)) }
-                            }
-                        }
-                    )
-                },
-                bottomBar = {
-                    if (!wide && route != Route.ADD_VERSION.path) MainNavigationBar(navController, route)
-                },
-                floatingActionButton = {
-                    if (route == Route.LIBRARY.path) {
-                        FloatingActionButton(
-                            onClick = { navController.navigate(Route.ADD_VERSION.path) },
-                            modifier = Modifier.testTag("add_version")
-                        ) {
-                            Icon(
-                                painter = painterResource(Route.ADD_VERSION.icon),
-                                contentDescription = stringResource(Route.ADD_VERSION.label)
-                            )
-                        }
-                    }
-                },
-                snackbarHost = { SnackbarHost(snackbar) }
-            ) { padding ->
-                NavHost(
-                    navController = navController,
-                    startDestination = Route.LIBRARY.path,
-                    modifier = Modifier.padding(padding)
-                ) {
-                    composable(Route.LIBRARY.path) {
-                        val state by libraryViewModel.state.collectAsStateWithLifecycle()
-                        LibraryScreen(state, libraryViewModel, navController, snackbar)
-                    }
-                    composable(Route.DOWNLOADS.path) {
-                        val state by downloadsViewModel.state.collectAsStateWithLifecycle()
-                        DownloadsScreen(state, downloadsViewModel)
-                    }
-                    composable(Route.SETTINGS.path) {
-                        val state by settingsViewModel.state.collectAsStateWithLifecycle()
-                        SettingsScreen(app, state, settingsViewModel, onSignIn, snackbar)
-                    }
-                    composable(Route.ADD_VERSION.path) {
-                        val state by addVersionViewModel.state.collectAsStateWithLifecycle()
-                        AddVersionScreen(state, addVersionViewModel)
-                        LaunchedEffect(state.addedVersionId) {
-                            if (state.addedVersionId != null) {
-                                addVersionViewModel.consumeAdded()
-                                navController.popBackStack()
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MainNavigationBar(navController: NavHostController, current: String) {
-    NavigationBar {
-        Route.entries.take(3).forEach { route ->
-            NavigationBarItem(
-                selected = current == route.path,
-                onClick = { navigateMain(navController, route.path) },
-                icon = { Icon(painterResource(route.icon), contentDescription = null) },
-                label = { Text(stringResource(route.label)) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun MainNavigationRail(navController: NavHostController, current: String) {
-    NavigationRail(Modifier.fillMaxHeight()) {
-        Spacer(Modifier.height(12.dp))
-        Route.entries.take(3).forEach { route ->
-            NavigationRailItem(
-                selected = current == route.path,
-                onClick = { navigateMain(navController, route.path) },
-                icon = { Icon(painterResource(route.icon), contentDescription = null) },
-                label = { Text(stringResource(route.label)) }
-            )
-        }
-    }
-}
-
-private fun navigateMain(controller: NavHostController, path: String) {
-    controller.navigate(path) {
-        popUpTo(controller.graph.findStartDestination().id) { saveState = true }
-        launchSingleTop = true
-        restoreState = true
-    }
-}
-
-@Composable
-private fun LibraryScreen(
+internal fun LibraryScreen(
     state: LibraryUiState,
     viewModel: LibraryViewModel,
     navController: NavHostController,
@@ -329,32 +241,35 @@ private fun LibraryScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag("library"),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 104.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 96.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Text(stringResource(R.string.installed_minecraft), style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-            Card(Modifier.fillMaxWidth()) {
+            LaunchlySectionTitle(stringResource(R.string.installed_minecraft))
+            Spacer(Modifier.height(10.dp))
+            LaunchlyRaisedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     val installed = state.installed
                     Text(
                         installed?.let { stringResource(R.string.minecraft_version, it.versionName, it.versionCode) }
                             ?: stringResource(R.string.not_installed),
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (installed == null) LaunchlyDesign.TextMuted else LaunchlyDesign.TextPrimary
                     )
                     if (installed != null) {
-                        Button({
-                            when (val result = viewModel.launchMinecraft()) {
-                                is LaunchResult.Failure -> scope.launch { snackbar.showSnackbar(result.message) }
-                                LaunchResult.Launched -> Unit
+                        LaunchlyPrimaryButton(
+                            onClick = {
+                                when (val result = viewModel.launchMinecraft()) {
+                                    is LaunchResult.Failure -> scope.launch { snackbar.showSnackbar(result.message) }
+                                    LaunchResult.Launched -> Unit
+                                }
                             }
-                        }) { Text(stringResource(R.string.launch)) }
+                        ) { Text(stringResource(R.string.launch)) }
                     }
                 }
             }
         }
-        item { Text(stringResource(R.string.managed_versions), style = MaterialTheme.typography.titleMedium) }
+        item { LaunchlySectionTitle(stringResource(R.string.managed_versions)) }
         if (state.versions.isEmpty()) {
             item { EmptyCard(R.string.empty_library_title, R.string.empty_library_body) }
         } else {
@@ -373,12 +288,12 @@ private fun LibraryScreen(
     }
 
     when (val operation = state.operation) {
-        is PackageOperationState.PermissionRequired -> AlertDialog(
+        is PackageOperationState.PermissionRequired -> LaunchlyDialog(
             onDismissRequest = viewModel::dismissOperation,
-            title = { Text(stringResource(R.string.install_permission_title)) },
-            text = { Text(stringResource(R.string.install_permission_message)) },
-            confirmButton = {
-                TextButton({
+            title = stringResource(R.string.install_permission_title),
+            message = stringResource(R.string.install_permission_message),
+            confirmText = stringResource(R.string.open_settings),
+            onConfirm = {
                     runCatching {
                         installSettingsLauncher.launch(
                             Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, "package:${context.packageName}".toUri())
@@ -386,18 +301,19 @@ private fun LibraryScreen(
                     }.onFailure {
                         scope.launch { snackbar.showSnackbar(linkUnavailableMessage) }
                     }
-                }) { Text(stringResource(R.string.open_settings)) }
             },
-            dismissButton = { TextButton(viewModel::dismissOperation) { Text(stringResource(R.string.cancel)) } }
+            dismissText = stringResource(R.string.cancel),
+            onDismiss = viewModel::dismissOperation
         )
-        is PackageOperationState.DowngradeConfirmationRequired -> AlertDialog(
+        is PackageOperationState.DowngradeConfirmationRequired -> LaunchlyDialog(
             onDismissRequest = viewModel::dismissOperation,
-            title = { Text(stringResource(R.string.downgrade_title)) },
-            text = { Text(stringResource(R.string.downgrade_message, operation.currentVersion, operation.targetVersion)) },
-            confirmButton = {
-                Button({ viewModel.confirmDowngrade(operation.versionId) }) { Text(stringResource(R.string.uninstall_and_continue)) }
-            },
-            dismissButton = { TextButton(viewModel::dismissOperation) { Text(stringResource(R.string.cancel)) } }
+            title = stringResource(R.string.downgrade_title),
+            message = stringResource(R.string.downgrade_message, operation.currentVersion, operation.targetVersion),
+            confirmText = stringResource(R.string.uninstall_and_continue),
+            onConfirm = { viewModel.confirmDowngrade(operation.versionId) },
+            dismissText = stringResource(R.string.cancel),
+            destructive = true,
+            onDismiss = viewModel::dismissOperation
         )
         is PackageOperationState.Failure -> MessageDialog(R.string.operation_failed, operation.message, viewModel::dismissOperation)
         is PackageOperationState.Completed -> MessageDialog(R.string.operation_complete, operation.message, viewModel::dismissOperation)
@@ -430,7 +346,7 @@ private fun ManagedVersionCard(
             item.version.customIconPath?.let(BitmapFactory::decodeFile)?.asImageBitmap()
         }
     }
-    Card(Modifier.fillMaxWidth().testTag("version_${item.version.id}")) {
+    LaunchlyRaisedCard(Modifier.fillMaxWidth().testTag("version_${item.version.id}")) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 icon?.let {
@@ -443,13 +359,25 @@ private fun ManagedVersionCard(
                 }
                 Column(Modifier.weight(1f)) {
                     Text(item.version.displayName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(item.version.versionName, style = MaterialTheme.typography.bodyMedium)
+                    Text(item.version.versionName, style = MaterialTheme.typography.bodyMedium, color = LaunchlyDesign.TextMuted)
                 }
                 Box {
-                    TextButton({ menuExpanded = true }, Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)) {
-                        Text(stringResource(R.string.more_actions))
+                    TextButton(
+                        onClick = { menuExpanded = true },
+                        modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
+                        colors = ButtonDefaults.textButtonColors(contentColor = LaunchlyDesign.TextSecondary)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_more_vert),
+                            contentDescription = stringResource(R.string.more_actions)
+                        )
                     }
-                    DropdownMenu(menuExpanded, { menuExpanded = false }) {
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                        containerColor = LaunchlyDesign.PromptSurface,
+                        shape = LaunchlyDesign.CardShape
+                    ) {
                         DropdownMenuItem({ Text(stringResource(R.string.edit)) }, onClick = { menuExpanded = false; editing = true })
                         DropdownMenuItem(
                             { Text(stringResource(R.string.choose_icon)) },
@@ -462,43 +390,74 @@ private fun ManagedVersionCard(
                     }
                 }
             }
-            Text(stringResource(R.string.architecture, item.version.architecture.abi))
-            Text(stringResource(R.string.download_state, item.download?.status?.displayName() ?: stringResource(R.string.download)))
-            item.download?.progress?.let { LinearProgressIndicator(progress = { it }, Modifier.fillMaxWidth()) }
+            Text(
+                stringResource(R.string.architecture, item.version.architecture.abi),
+                color = LaunchlyDesign.TextMuted,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                stringResource(R.string.download_state, item.download?.status?.displayName() ?: stringResource(R.string.download)),
+                color = LaunchlyDesign.TextSecondary,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            item.download?.progress?.let { LaunchlyProgress(it) }
             when (item.download?.status) {
-                DownloadStatus.READY -> Button(onInstall) { Text(stringResource(R.string.install)) }
-                DownloadStatus.QUEUED, DownloadStatus.DOWNLOADING -> OutlinedButton(onViewDownload) { Text(stringResource(R.string.view_download)) }
-                DownloadStatus.PAUSED, DownloadStatus.FAILED -> Button(onDownload) { Text(stringResource(R.string.resume)) }
-                else -> Button(onDownload) { Text(stringResource(R.string.download)) }
+                DownloadStatus.READY -> LaunchlyPrimaryButton(onInstall) { Text(stringResource(R.string.install)) }
+                DownloadStatus.QUEUED, DownloadStatus.DOWNLOADING -> LaunchlySecondaryButton(onViewDownload) {
+                    Text(stringResource(R.string.view_download))
+                }
+                DownloadStatus.PAUSED, DownloadStatus.FAILED -> LaunchlyPrimaryButton(onDownload) {
+                    Text(stringResource(R.string.resume))
+                }
+                else -> LaunchlyPrimaryButton(onDownload) { Text(stringResource(R.string.download)) }
             }
         }
     }
     if (editing) {
-        AlertDialog(
+        LaunchlyPrompt(
             onDismissRequest = { editing = false },
-            title = { Text(stringResource(R.string.rename_version)) },
-            text = { OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.version_display_name)) }, singleLine = true) },
-            confirmButton = { TextButton({ onRename(name); editing = false }) { Text(stringResource(R.string.save)) } },
-            dismissButton = { TextButton({ editing = false }) { Text(stringResource(R.string.cancel)) } }
-        )
+            title = stringResource(R.string.rename_version)
+        ) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.version_display_name)) },
+                singleLine = true,
+                shape = LaunchlyDesign.ControlShape,
+                colors = launchlyTextFieldColors()
+            )
+            LaunchlyPrimaryButton(
+                onClick = { onRename(name); editing = false },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text(stringResource(R.string.save)) }
+            TextButton(
+                onClick = { editing = false },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                colors = ButtonDefaults.textButtonColors(contentColor = LaunchlyDesign.TextSecondary)
+            ) { Text(stringResource(R.string.cancel)) }
+        }
     }
     if (deleting) {
-        AlertDialog(
+        LaunchlyDialog(
             onDismissRequest = { deleting = false },
-            title = { Text(stringResource(R.string.delete_version_title)) },
-            text = { Text(stringResource(R.string.delete_version_message, item.version.displayName)) },
-            confirmButton = { Button({ onDelete(); deleting = false }) { Text(stringResource(R.string.delete)) } },
-            dismissButton = { TextButton({ deleting = false }) { Text(stringResource(R.string.cancel)) } }
+            title = stringResource(R.string.delete_version_title),
+            message = stringResource(R.string.delete_version_message, item.version.displayName),
+            confirmText = stringResource(R.string.delete),
+            onConfirm = { onDelete(); deleting = false },
+            dismissText = stringResource(R.string.cancel),
+            destructive = true,
+            onDismiss = { deleting = false }
         )
     }
 }
 
 @Composable
-private fun DownloadsScreen(state: DownloadsUiState, viewModel: DownloadsViewModel) {
+internal fun DownloadsScreen(state: DownloadsUiState, viewModel: DownloadsViewModel) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag("downloads"),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         if (state.records.isEmpty()) item { EmptyCard(R.string.no_downloads_title, R.string.no_downloads_body) }
         items(state.records, key = { it.first.versionId }) { (download, version) ->
@@ -509,26 +468,49 @@ private fun DownloadsScreen(state: DownloadsUiState, viewModel: DownloadsViewMod
 
 @Composable
 private fun DownloadCard(download: DownloadRecord, version: ManagedVersion?, viewModel: DownloadsViewModel) {
-    Card(Modifier.fillMaxWidth().testTag("download_${download.versionId}")) {
+    LaunchlyRaisedCard(Modifier.fillMaxWidth().testTag("download_${download.versionId}")) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(version?.displayName ?: download.versionId, style = MaterialTheme.typography.titleMedium)
-            Text(download.status.displayName())
-            download.progress?.let { LinearProgressIndicator(progress = { it }, Modifier.fillMaxWidth()) }
+            Text(download.status.displayName(), color = LaunchlyDesign.TextSecondary)
+            if (download.status == DownloadStatus.DOWNLOADING || download.status == DownloadStatus.QUEUED) {
+                LaunchlyProgress(download.progress)
+            } else {
+                download.progress?.let { LaunchlyProgress(it) }
+            }
             Text(
-                download.totalBytes?.let { stringResource(R.string.download_progress, formatBytes(download.bytesDownloaded), formatBytes(it)) }
-                    ?: stringResource(R.string.download_size_unknown)
+                text = download.totalBytes?.let {
+                    stringResource(R.string.download_progress, formatBytes(download.bytesDownloaded), formatBytes(it))
+                } ?: stringResource(R.string.download_size_unknown),
+                color = LaunchlyDesign.TextMuted,
+                style = MaterialTheme.typography.bodyMedium
             )
-            download.speedBytesPerSecond?.let { Text(stringResource(R.string.download_speed, formatBytes(it))) }
-            download.failureMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            download.speedBytesPerSecond?.let {
+                Text(
+                    stringResource(R.string.download_speed, formatBytes(it)),
+                    color = LaunchlyDesign.TextMuted,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            download.failureMessage?.let { Text(it, color = LaunchlyDesign.Error) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 when (download.status) {
-                    DownloadStatus.DOWNLOADING, DownloadStatus.QUEUED -> OutlinedButton({ viewModel.pause(download.versionId) }) { Text(stringResource(R.string.pause)) }
-                    DownloadStatus.PAUSED -> Button({ viewModel.resume(download.versionId) }) { Text(stringResource(R.string.resume)) }
-                    DownloadStatus.FAILED, DownloadStatus.CANCELLED -> Button({ viewModel.retry(download.versionId) }) { Text(stringResource(R.string.retry)) }
+                    DownloadStatus.DOWNLOADING, DownloadStatus.QUEUED -> LaunchlySecondaryButton(
+                        onClick = { viewModel.pause(download.versionId) }
+                    ) { Text(stringResource(R.string.pause)) }
+                    DownloadStatus.PAUSED -> LaunchlyPrimaryButton(
+                        onClick = { viewModel.resume(download.versionId) }
+                    ) { Text(stringResource(R.string.resume)) }
+                    DownloadStatus.FAILED, DownloadStatus.CANCELLED -> LaunchlyPrimaryButton(
+                        onClick = { viewModel.retry(download.versionId) }
+                    ) { Text(stringResource(R.string.retry)) }
                     DownloadStatus.READY -> Unit
                 }
                 if (download.status != DownloadStatus.READY) {
-                    TextButton({ viewModel.cancel(download.versionId) }) { Text(stringResource(R.string.cancel)) }
+                    TextButton(
+                        onClick = { viewModel.cancel(download.versionId) },
+                        modifier = Modifier.height(50.dp),
+                        colors = ButtonDefaults.textButtonColors(contentColor = LaunchlyDesign.TextSecondary)
+                    ) { Text(stringResource(R.string.cancel)) }
                 }
             }
         }
@@ -536,41 +518,90 @@ private fun DownloadCard(download: DownloadRecord, version: ManagedVersion?, vie
 }
 
 @Composable
-private fun AddVersionScreen(state: AddVersionUiState, viewModel: AddVersionViewModel) {
+internal fun AddVersionScreen(state: AddVersionUiState, viewModel: AddVersionViewModel) {
     Column(Modifier.fillMaxSize().testTag("add_version_screen")) {
         OutlinedTextField(
             value = state.query,
             onValueChange = viewModel::setQuery,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp),
             label = { Text(stringResource(R.string.search_versions)) },
-            singleLine = true
+            singleLine = true,
+            shape = LaunchlyDesign.ControlShape,
+            colors = launchlyTextFieldColors()
         )
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            item { FilterChip(state.track == null, { viewModel.setTrack(null) }, { Text(stringResource(R.string.all)) }) }
-            item { FilterChip(state.track == ReleaseTrack.RELEASE, { viewModel.setTrack(ReleaseTrack.RELEASE) }, { Text(stringResource(R.string.release)) }) }
-            item { FilterChip(state.track == ReleaseTrack.BETA, { viewModel.setTrack(ReleaseTrack.BETA) }, { Text(stringResource(R.string.beta)) }) }
+        LazyRow(contentPadding = PaddingValues(horizontal = 18.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            item { LaunchlyFilterChip(state.track == null, { viewModel.setTrack(null) }, stringResource(R.string.all)) }
+            item {
+                LaunchlyFilterChip(
+                    state.track == ReleaseTrack.RELEASE,
+                    { viewModel.setTrack(ReleaseTrack.RELEASE) },
+                    stringResource(R.string.release)
+                )
+            }
+            item {
+                LaunchlyFilterChip(
+                    state.track == ReleaseTrack.BETA,
+                    { viewModel.setTrack(ReleaseTrack.BETA) },
+                    stringResource(R.string.beta)
+                )
+            }
         }
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            item { FilterChip(state.architecture == null, { viewModel.setArchitecture(null) }, { Text(stringResource(R.string.all)) }) }
+        LazyRow(contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+                LaunchlyFilterChip(
+                    state.architecture == null,
+                    { viewModel.setArchitecture(null) },
+                    stringResource(R.string.all)
+                )
+            }
             items(state.availableArchitectures, key = Architecture::abi) { architecture ->
-                FilterChip(state.architecture == architecture, { viewModel.setArchitecture(architecture) }, { Text(architecture.abi) })
+                LaunchlyFilterChip(
+                    state.architecture == architecture,
+                    { viewModel.setArchitecture(architecture) },
+                    architecture.abi
+                )
             }
         }
         when {
-            state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = LaunchlyDesign.Accent, trackColor = LaunchlyDesign.ProgressTrack)
+            }
             state.error != null && state.versions.isEmpty() -> ErrorState(state.error, viewModel::retry)
             else -> {
-                if (state.cached) Text(stringResource(R.string.catalog_cached), Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.tertiary)
-                LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (state.cached) {
+                    LaunchlyRaisedCard(Modifier.fillMaxWidth().padding(horizontal = 18.dp)) {
+                        Text(
+                            stringResource(R.string.catalog_cached),
+                            Modifier.padding(14.dp),
+                            color = LaunchlyDesign.TextMuted,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+                LazyColumn(
+                    contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 10.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     if (state.versions.isEmpty()) item { EmptyCard(R.string.no_versions, R.string.no_versions_body) }
                     items(state.versions, key = VersionData::stableId) { version ->
-                        Card(Modifier.fillMaxWidth().testTag("catalog_${version.stableId}")) {
+                        LaunchlyRaisedCard(Modifier.fillMaxWidth().testTag("catalog_${version.stableId}")) {
                             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text(version.name, style = MaterialTheme.typography.titleMedium)
-                                    Text(stringResource(R.string.catalog_version_details, version.code, version.architecture.abi, version.track.displayName()))
+                                    Text(
+                                        stringResource(
+                                            R.string.catalog_version_details,
+                                            version.code,
+                                            version.architecture.abi,
+                                            version.track.displayName()
+                                        ),
+                                        color = LaunchlyDesign.TextMuted,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
                                 }
-                                Button({ viewModel.add(version) }) { Text(stringResource(R.string.add_version)) }
+                                LaunchlyPrimaryButton(onClick = { viewModel.add(version) }) {
+                                    Text(stringResource(R.string.add_version))
+                                }
                             }
                         }
                     }
@@ -581,7 +612,29 @@ private fun AddVersionScreen(state: AddVersionUiState, viewModel: AddVersionView
 }
 
 @Composable
-private fun SettingsScreen(
+private fun LaunchlyFilterChip(selected: Boolean, onClick: () -> Unit, label: String) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        shape = LaunchlyDesign.ControlShape,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = LaunchlyDesign.NavigationSurface,
+            labelColor = LaunchlyDesign.TextSecondary,
+            selectedContainerColor = LaunchlyDesign.Accent,
+            selectedLabelColor = LaunchlyDesign.TextPrimary
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            borderColor = Color.Transparent,
+            selectedBorderColor = Color.Transparent
+        )
+    )
+}
+
+@Composable
+internal fun SettingsScreen(
     app: LaunchlyApp,
     state: SettingsUiState,
     viewModel: SettingsViewModel,
@@ -610,63 +663,81 @@ private fun SettingsScreen(
     }
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag("settings"),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item { Text(stringResource(R.string.account), style = MaterialTheme.typography.titleMedium) }
+        item { LaunchlySectionTitle(stringResource(R.string.account)) }
         item {
             SettingsCard {
                 when (val auth = state.auth) {
                     is AuthState.Authenticated -> {
                         Text(auth.session.displayName ?: auth.session.email, style = MaterialTheme.typography.titleMedium)
-                        Text(auth.session.email)
-                        auth.profileError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                        OutlinedButton(viewModel::refreshProfile, Modifier.fillMaxWidth()) { Text(stringResource(R.string.refresh)) }
-                        OutlinedButton(onSignIn, Modifier.fillMaxWidth()) { Text(stringResource(R.string.reauthenticate)) }
-                        TextButton(viewModel::signOut, Modifier.fillMaxWidth()) { Text(stringResource(R.string.sign_out)) }
+                        Text(auth.session.email, color = LaunchlyDesign.TextMuted)
+                        auth.profileError?.let { Text(it, color = LaunchlyDesign.Error) }
+                        LaunchlySettingsButton(viewModel::refreshProfile, primary = false) {
+                            Text(stringResource(R.string.refresh))
+                        }
+                        LaunchlySettingsButton(onSignIn, primary = false) {
+                            Text(stringResource(R.string.reauthenticate))
+                        }
+                        TextButton(
+                            onClick = viewModel::signOut,
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            colors = ButtonDefaults.textButtonColors(contentColor = LaunchlyDesign.TextSecondary)
+                        ) { Text(stringResource(R.string.sign_out)) }
                     }
                     AuthState.SignedOut -> {
-                        Text(stringResource(R.string.signed_out))
-                        Button(onSignIn) { Text(stringResource(R.string.sign_in_google)) }
+                        Text(stringResource(R.string.signed_out), color = LaunchlyDesign.TextMuted)
+                        LaunchlySettingsButton(onSignIn) { Text(stringResource(R.string.sign_in_google)) }
                     }
-                    AuthState.Loading -> CircularProgressIndicator()
+                    AuthState.Loading -> CircularProgressIndicator(
+                        color = LaunchlyDesign.Accent,
+                        trackColor = LaunchlyDesign.ProgressTrack
+                    )
                 }
             }
         }
-        item { Text(stringResource(R.string.install_permission), style = MaterialTheme.typography.titleMedium) }
+        item { LaunchlySectionTitle(stringResource(R.string.install_permission)) }
         item {
             SettingsCard {
-                Text(stringResource(if (state.canInstallPackages) R.string.permission_allowed else R.string.permission_not_allowed))
+                Text(
+                    stringResource(if (state.canInstallPackages) R.string.permission_allowed else R.string.permission_not_allowed),
+                    color = if (state.canInstallPackages) LaunchlyDesign.TextPrimary else LaunchlyDesign.TextMuted
+                )
                 if (!state.canInstallPackages) {
-                    OutlinedButton({
-                        runCatching {
-                            installSettingsLauncher.launch(
-                                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, "package:${context.packageName}".toUri())
-                            )
-                        }.onFailure {
-                            scope.launch { snackbar.showSnackbar(linkUnavailableMessage) }
+                    LaunchlySettingsButton(
+                        onClick = {
+                            runCatching {
+                                installSettingsLauncher.launch(
+                                    Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, "package:${context.packageName}".toUri())
+                                )
+                            }.onFailure {
+                                scope.launch { snackbar.showSnackbar(linkUnavailableMessage) }
+                            }
                         }
-                    }) { Text(stringResource(R.string.open_settings)) }
+                    ) { Text(stringResource(R.string.open_settings)) }
                 }
             }
         }
-        item { Text(stringResource(R.string.about), style = MaterialTheme.typography.titleMedium) }
+        item { LaunchlySectionTitle(stringResource(R.string.about)) }
         item {
             SettingsCard {
-                Text(stringResource(R.string.version_label, state.appVersion))
-                HorizontalDivider()
-                TextButton({ openUrl(context, SOURCE_URL) }) { Text(stringResource(R.string.source_code)) }
-                TextButton({ openUrl(context, PRIVACY_URL) }) { Text(stringResource(R.string.privacy_policy)) }
-                TextButton({ openUrl(context, DISCLAIMER_URL) }) { Text(stringResource(R.string.disclaimer)) }
+                Text(stringResource(R.string.version_label, state.appVersion), style = MaterialTheme.typography.titleMedium)
+                HorizontalDivider(color = LaunchlyDesign.Divider)
+                SettingsLink(stringResource(R.string.source_code)) { openUrl(context, SOURCE_URL) }
+                SettingsLink(stringResource(R.string.privacy_policy)) { openUrl(context, PRIVACY_URL) }
+                SettingsLink(stringResource(R.string.disclaimer)) { openUrl(context, DISCLAIMER_URL) }
             }
         }
         item {
             SettingsCard {
-                Text(stringResource(R.string.diagnostics_description))
-                Button({
-                    runCatching { diagnosticLauncher.launch("launchly-diagnostics.json") }
-                        .onFailure { scope.launch { snackbar.showSnackbar(diagnosticsFailedMessage) } }
-                }) { Text(stringResource(R.string.export_diagnostics)) }
+                Text(stringResource(R.string.diagnostics_description), color = LaunchlyDesign.TextMuted)
+                LaunchlySettingsButton(
+                    onClick = {
+                        runCatching { diagnosticLauncher.launch("launchly-diagnostics.json") }
+                            .onFailure { scope.launch { snackbar.showSnackbar(diagnosticsFailedMessage) } }
+                    }
+                ) { Text(stringResource(R.string.export_diagnostics)) }
             }
         }
     }
@@ -674,17 +745,32 @@ private fun SettingsScreen(
 
 @Composable
 private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
-    Card(Modifier.fillMaxWidth()) {
+    LaunchlyRaisedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
     }
 }
 
 @Composable
+private fun SettingsLink(text: String, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().height(48.dp),
+        color = Color.Transparent,
+        contentColor = LaunchlyDesign.TextSecondary,
+        shape = LaunchlyDesign.CardShape
+    ) {
+        Box(Modifier.fillMaxSize().padding(horizontal = 4.dp), contentAlignment = Alignment.CenterStart) {
+            Text(text, style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
+
+@Composable
 private fun EmptyCard(title: Int, body: Int) {
-    Card(Modifier.fillMaxWidth()) {
+    LaunchlyRaisedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(body))
+            Text(stringResource(body), color = LaunchlyDesign.TextMuted)
         }
     }
 }
@@ -693,19 +779,20 @@ private fun EmptyCard(title: Int, body: Int) {
 private fun ErrorState(message: String, retry: () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(message, color = MaterialTheme.colorScheme.error)
-            Button(retry) { Text(stringResource(R.string.retry)) }
+            Text(message, color = LaunchlyDesign.Error)
+            LaunchlyPrimaryButton(retry) { Text(stringResource(R.string.retry)) }
         }
     }
 }
 
 @Composable
 private fun MessageDialog(title: Int, message: String, dismiss: () -> Unit) {
-    AlertDialog(
+    LaunchlyDialog(
         onDismissRequest = dismiss,
-        title = { Text(stringResource(title)) },
-        text = { Text(message) },
-        confirmButton = { TextButton(dismiss) { Text(stringResource(R.string.close)) } }
+        title = stringResource(title),
+        message = message,
+        confirmText = stringResource(R.string.close),
+        onConfirm = dismiss
     )
 }
 

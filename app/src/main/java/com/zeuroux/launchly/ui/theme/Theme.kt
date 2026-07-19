@@ -1,47 +1,93 @@
 package com.zeuroux.launchly.ui.theme
 
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.zeuroux.launchly.R
 
-private val LaunchlyLightColors = lightColorScheme(
-    primary = Color(0xFF315DA8),
+val LaunchlyFontFamily = FontFamily(Font(R.font.space_grotesk_regular))
+
+private val LaunchlyColors = darkColorScheme(
+    primary = Color(0xFFFF223C),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFD8E2FF),
-    onPrimaryContainer = Color(0xFF001A41),
-    secondary = Color(0xFF555F71),
-    tertiary = Color(0xFF6E5676),
-    surface = Color(0xFFF9F9FF),
-    surfaceVariant = Color(0xFFE1E2EC)
+    primaryContainer = Color(0xFFFF223C),
+    onPrimaryContainer = Color.White,
+    secondary = Color(0xFF695055),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF332C30),
+    onSecondaryContainer = Color(0xFFE2D8DC),
+    tertiary = Color(0xFFD9CDD2),
+    onTertiary = Color(0xFF1B1518),
+    background = Color.Black,
+    onBackground = Color.White,
+    surface = Color(0xFF1B1518),
+    onSurface = Color.White,
+    surfaceVariant = Color(0xFF332C30),
+    onSurfaceVariant = Color(0xFFD9CDD2),
+    surfaceContainer = Color(0xFF1B1518),
+    surfaceContainerHigh = Color(0xFF332C30),
+    surfaceContainerHighest = Color(0xFF4A3037),
+    outline = Color(0xFF695055),
+    outlineVariant = Color(0xFF33272D),
+    error = Color(0xFFFF4A5F),
+    onError = Color.White,
+    errorContainer = Color(0xFF4A3037),
+    onErrorContainer = Color.White,
+    scrim = Color(0x8C000000)
 )
 
-private val LaunchlyDarkColors = darkColorScheme(
-    primary = Color(0xFFAEC6FF),
-    onPrimary = Color(0xFF002E69),
-    primaryContainer = Color(0xFF12458F),
-    onPrimaryContainer = Color(0xFFD8E2FF),
-    secondary = Color(0xFFBDC7DC),
-    tertiary = Color(0xFFDCBCE2),
-    surface = Color(0xFF111318),
-    surfaceVariant = Color(0xFF44474F)
+private fun launchlyTextStyle(
+    size: Int,
+    lineHeight: Int,
+    weight: FontWeight = FontWeight.Normal
+) = TextStyle(
+    fontFamily = LaunchlyFontFamily,
+    fontWeight = weight,
+    fontSize = size.sp,
+    lineHeight = lineHeight.sp
+)
+
+private val LaunchlyTypography = Typography(
+    displayLarge = launchlyTextStyle(40, 46, FontWeight.Bold),
+    displayMedium = launchlyTextStyle(32, 38, FontWeight.Bold),
+    displaySmall = launchlyTextStyle(28, 34, FontWeight.Bold),
+    headlineLarge = launchlyTextStyle(28, 34, FontWeight.Bold),
+    headlineMedium = launchlyTextStyle(25, 31, FontWeight.Bold),
+    headlineSmall = launchlyTextStyle(22, 28, FontWeight.Bold),
+    titleLarge = launchlyTextStyle(22, 28, FontWeight.Bold),
+    titleMedium = launchlyTextStyle(17, 23, FontWeight.Bold),
+    titleSmall = launchlyTextStyle(15, 21, FontWeight.Bold),
+    bodyLarge = launchlyTextStyle(15, 22),
+    bodyMedium = launchlyTextStyle(13, 19),
+    bodySmall = launchlyTextStyle(11, 16),
+    labelLarge = launchlyTextStyle(15, 20, FontWeight.Bold),
+    labelMedium = launchlyTextStyle(12, 16, FontWeight.Bold),
+    labelSmall = launchlyTextStyle(10, 14, FontWeight.Bold)
+)
+
+private val LaunchlyShapes = Shapes(
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(20.dp)
 )
 
 @Composable
 fun LaunchlyTheme(content: @Composable () -> Unit) {
-    val darkTheme = isSystemInDarkTheme()
-    val context = LocalContext.current
-    val colors = when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && darkTheme -> dynamicDarkColorScheme(context)
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> dynamicLightColorScheme(context)
-        darkTheme -> LaunchlyDarkColors
-        else -> LaunchlyLightColors
-    }
-    MaterialTheme(colorScheme = colors, content = content)
+    MaterialTheme(
+        colorScheme = LaunchlyColors,
+        typography = LaunchlyTypography,
+        shapes = LaunchlyShapes,
+        content = content
+    )
 }
