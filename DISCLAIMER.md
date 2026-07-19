@@ -1,42 +1,11 @@
 # Disclaimer
 
-### 1. Google Accounts.
+Launchly is an unofficial project and is not approved by, affiliated with, or supported by Mojang, Microsoft, Google, or the Google Play Store.
 
-You hold yourself accountable if you are to use Launchly with your personal Google Account, which may cause your account to be blocked/blacklisted by Google.
+Launchly uses an unofficial Google/AAS authentication and delivery flow. Google may change or reject that flow, and use may carry account or service-policy risk. Use only an account that legitimately owns Minecraft and only if you accept that risk.
 
-As per Google Play's Terms Of Service §4 and §2:
+Downloaded APKs are retrieved from authenticated Google delivery and verified locally before installation. Verification reduces risk but cannot guarantee that every device, Android build, account state, or external service will behave correctly. Install only releases signed by the certificate documented in this repository and obtained from the current [GitHub Releases page](https://github.com/flarialmc/Launchly/releases).
 
-#### §4 Rights and Restrictions
+Downgrading requires Android to uninstall the currently installed Minecraft app. That operation may permanently erase Minecraft app data, worlds, and settings that are not backed up. Launchly shows the current and target versions and requires a dedicated **Uninstall and continue** confirmation before starting it.
 
-> **Violation of License Terms.** If you violate any of the Content restriction provisions of the Terms, materially or repeatedly violate any of the other Terms or we are investigating you for suspected misconduct then Google may, without refund to you, terminate your access to Google Play, the Content or your Google Account and your rights under this licence will immediately terminate. We will notify you with the reason for our action unless we reasonably believe that to do so would cause Google or another person legal liability, would compromise an investigation, would compromise the operation of any Google products, services or systems, would cause harm to our users or would be in breach of the law or the direction of a legal enforcement authority. See Disabled Accounts in Section 2 for additional information.
->
-> **Restrictions:** You may not:
->
-> - display (in part or in whole) the Content as part of any public performance or display even if no fee is charged except (a) where such use would not constitute a copyright infringement or violate any other applicable right or (b) as specifically permitted and only in the exact manner provided.
-> - sell, rent, lease, redistribute, broadcast, transmit, communicate, modify, sublicense, transfer, assign any Content to any third party including with regard to any downloads of Content that you may obtain through Google Play except as specifically permitted and only in the exact manner provided.
-> - use Google Play or any Content in conjunction with any stream-ripping, stream capture or similar software to record or create a copy of any Content that is presented to you in streaming format.
-> - use Content as part of any service for sharing, lending or multi-person use, or for the purpose of any other institution, except as specifically permitted and only in the exact manner provided.
-> - attempt to, or assist, authorize or encourage others to circumvent, disable or defeat any of the security features or components that protect, obfuscate or otherwise restrict access to any Content or Google Play.
-> - remove any watermarks, labels or other legal or proprietary notices included in any Content, or attempt to modify any Content obtained through Google Play, including any modification for the purpose of disguising or changing any indications of the ownership or source of Content.
->
-> **Multiple Accounts.** If you have multiple Google Accounts with different user names, in some cases you may transfer Content out of an account and into another account, provided you are the owner of each such account and provided Google has enabled a feature of the relevant service allowing such transfers.
-
-#### §2 Your Use of Google Play
-
-> **Disabled Accounts.** If Google disables access to your account in accordance with the Terms (for example if you materially or repeatedly violate the Terms), you may be prevented from accessing Google Play, your account details or any files or other Content that is stored with your account. See the Help Center for more information. If you are the family manager of a family on Google Play and Google disables access to your account, your family members may lose access to family features requiring a family group, such as a family payment method, family subscriptions, or Content shared by family members. If you are a family member of a family on Google Play and Google disables your account, your family members will lose access to Content you have shared with them.
-
-### Downloading/Instaling Launchly from sources.
-
-You are to hold yourself responsible by installing **Launchly** from other sources other than our own, in which you do not blame us for malicious programs, device bricking or anything else.
-
-The following sources are the only official links we provide:
-
-- **Github** https://github.com/zeuroux/launchly/
-- **Official Website** https://zeuroux.tech/launchly/
-- **Our Discord Server** https://discord.gg/FZz68WWZM6/
-
-### Content
-
-We do not own any content within Launchly, all available content i.e. applications, information and links are provided "as is" directly from Google Play repositories/servers.
-
-#### Copyright © 2025 Tape Creation Laboratories • NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT
+Minecraft content and trademarks belong to their respective owners. Launchly does not grant rights to redistribute downloaded content or bypass purchase, licensing, or platform restrictions.

@@ -10,6 +10,13 @@
 .DS_Store
 /build
 /captures
+/app/release/
+*.apk
+*.aab
+*.dm
+output-metadata.json
+*.jks
+*.keystore
 .externalNativeBuild
 .cxx
 local.properties
