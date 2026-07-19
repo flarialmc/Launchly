@@ -35,7 +35,15 @@ class ApkSetValidator(
 
         files.forEach { file ->
             if (!file.isFile || file.length() <= 0L) throw ApkValidationException("${file.name} is missing or empty.")
-            val verification = ApkVerifier.Builder(file).build().verify()
+            // Split manifests commonly omit <uses-sdk>. Without an explicit platform
+            // range apksig treats such a split as supporting API 1 and incorrectly
+            // requires a legacy v1/JAR signature. Launchly and its installer only
+            // support API 28+, where APK Signature Scheme v2 and newer are valid.
+            val verification = ApkVerifier.Builder(file)
+                .setMinCheckedPlatformVersion(Build.VERSION_CODES.P)
+                .setMaxCheckedPlatformVersion(Build.VERSION.SDK_INT)
+                .build()
+                .verify()
             if (!verification.isVerified) {
                 val reason = verification.errors.firstOrNull()?.toString() ?: "signature verification failed"
                 throw ApkValidationException("${file.name} is not a valid signed APK: $reason")

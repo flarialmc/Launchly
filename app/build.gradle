@@ -52,9 +52,9 @@ android {
             minifyEnabled = true
             shrinkResources = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            if (hasReleaseSigning) {
-                signingConfig = signingConfigs.production
-            }
+            // TEMPORARY: use the standard debug key until production signing is available.
+            // Restore the production-signing conditional before publishing a release.
+            signingConfig = signingConfigs.debug
         }
     }
 

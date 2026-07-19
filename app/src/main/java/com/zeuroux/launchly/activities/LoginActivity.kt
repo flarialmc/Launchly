@@ -123,7 +123,13 @@ class LoginActivity : ComponentActivity() {
             .add("ACCESS_TOKEN", "1")
             .add("callerPkg", "com.google.android.gms")
             .add("add_account", "1")
-            .add("Token", oauthToken)
+            // CookieManager returns the EmbeddedSetup token in cookie-encoded form.
+            // Decode it once before FormBody applies application/x-www-form-urlencoded
+            // encoding; otherwise percent escapes are sent to Google double-encoded.
+            .add("Token", Uri.decode(oauthToken))
+            // Required by Google's current AAS exchange. This matches the upstream
+            // GPlayApi 3.5.8 compatibility fix for MissingDroidGuard responses.
+            .add("droidguard_results", "null")
             .add("callerSig", "38918a453d07199354f8b19af05ec6562ced5788")
             .build()
         val request = Request.Builder()
@@ -134,9 +140,6 @@ class LoginActivity : ComponentActivity() {
             .build()
         return try {
             container.okHttpClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    return TokenExchange.Failure("Google rejected sign-in with HTTP ${response.code}.")
-                }
                 val values = response.body?.string().orEmpty()
                     .lineSequence()
                     .mapNotNull { line ->
@@ -144,13 +147,11 @@ class LoginActivity : ComponentActivity() {
                         if (separator <= 0) null else line.substring(0, separator) to line.substring(separator + 1)
                     }
                     .toMap()
+                if (!response.isSuccessful) {
+                    return TokenExchange.Failure(authFailureMessage(response.code, values))
+                }
                 values["Error"]?.let { error ->
-                    val message = if (error.contains("BadAuthentication", true)) {
-                        "Google rejected the session. Sign in again and verify the account."
-                    } else {
-                        "Google authentication failed: $error"
-                    }
-                    return TokenExchange.Failure(message)
+                    return TokenExchange.Failure(authFailureMessage(response.code, values))
                 }
                 val token = values["Token"].orEmpty()
                 val responseEmail = values["Email"].orEmpty().ifBlank { email }
@@ -165,6 +166,21 @@ class LoginActivity : ComponentActivity() {
             TokenExchange.Failure("Google sign-in is unavailable. Check your connection and try again.")
         } catch (_: Exception) {
             TokenExchange.Failure("Google sign-in could not be completed safely.")
+        }
+    }
+
+    private fun authFailureMessage(httpCode: Int, values: Map<String, String>): String {
+        return when (val error = values["Error"].orEmpty()) {
+            "BadAuthentication" -> "Google rejected the session. Sign in again and verify the account."
+            "CaptchaRequired" -> "Google requires an additional account verification step. Complete it in a browser, then try again."
+            "AccountDeleted" -> "This Google account has been deleted."
+            "AccountDisabled" -> "This Google account is disabled."
+            "ServiceUnavailable" -> "Google authentication is temporarily unavailable. Try again later."
+            else -> if (error.isNotBlank()) {
+                "Google authentication failed: $error (HTTP $httpCode)."
+            } else {
+                "Google rejected sign-in with HTTP $httpCode."
+            }
         }
     }
 

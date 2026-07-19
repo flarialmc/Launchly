@@ -43,7 +43,7 @@ class GPlayService(
         try {
             val files = PurchaseHelper(authData()).purchase(
                 MINECRAFT_PACKAGE,
-                versionCode.toInt(),
+                versionCode,
                 0
             )
             files.mapNotNull { file ->
