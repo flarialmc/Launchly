@@ -49,8 +49,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled = true
-            shrinkResources = true
+            minifyEnabled = false
+            shrinkResources = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             // TEMPORARY: use the standard debug key until production signing is available.
             // Restore the production-signing conditional before publishing a release.

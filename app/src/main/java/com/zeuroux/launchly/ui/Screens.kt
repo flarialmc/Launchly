@@ -39,9 +39,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -71,6 +72,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -111,11 +113,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
-private enum class Route(val path: String, val label: Int) {
-    LIBRARY("library", R.string.library),
-    DOWNLOADS("downloads", R.string.downloads),
-    SETTINGS("settings", R.string.settings),
-    ADD_VERSION("add-version", R.string.add_version)
+private enum class Route(val path: String, val label: Int, val icon: Int) {
+    LIBRARY("library", R.string.library, R.drawable.ic_list),
+    DOWNLOADS("downloads", R.string.downloads, R.drawable.ic_download),
+    SETTINGS("settings", R.string.settings, R.drawable.ic_settings),
+    ADD_VERSION("add-version", R.string.add_version, R.drawable.ic_add)
 }
 
 @Composable
@@ -209,10 +211,15 @@ fun AppShell(
                 },
                 floatingActionButton = {
                     if (route == Route.LIBRARY.path) {
-                        ExtendedFloatingActionButton(
+                        FloatingActionButton(
                             onClick = { navController.navigate(Route.ADD_VERSION.path) },
                             modifier = Modifier.testTag("add_version")
-                        ) { Text(stringResource(R.string.add_version)) }
+                        ) {
+                            Icon(
+                                painter = painterResource(Route.ADD_VERSION.icon),
+                                contentDescription = stringResource(Route.ADD_VERSION.label)
+                            )
+                        }
                     }
                 },
                 snackbarHost = { SnackbarHost(snackbar) }
@@ -257,7 +264,7 @@ private fun MainNavigationBar(navController: NavHostController, current: String)
             NavigationBarItem(
                 selected = current == route.path,
                 onClick = { navigateMain(navController, route.path) },
-                icon = { Text(route.name.take(1)) },
+                icon = { Icon(painterResource(route.icon), contentDescription = null) },
                 label = { Text(stringResource(route.label)) }
             )
         }
@@ -272,7 +279,7 @@ private fun MainNavigationRail(navController: NavHostController, current: String
             NavigationRailItem(
                 selected = current == route.path,
                 onClick = { navigateMain(navController, route.path) },
-                icon = { Text(route.name.take(1)) },
+                icon = { Icon(painterResource(route.icon), contentDescription = null) },
                 label = { Text(stringResource(route.label)) }
             )
         }
