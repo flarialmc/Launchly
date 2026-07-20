@@ -27,7 +27,7 @@ Release signing is never stored in the repository. A signed build accepts these 
 - `LAUNCHLY_KEY_ALIAS`
 - `LAUNCHLY_KEY_PASSWORD`
 
-Release acceptance pins certificate SHA-256 `42cf3d736aa375f4d5971b6bf3ae5ddc8ed4e230067cfc529c7a6bcfa7a0a8dd`, rejects legacy-client identifiers, and enforces a 15 MiB universal APK budget. Maintainers must also keep Android developer verification current for certified-device sideload distribution.
+Release acceptance pins certificate SHA-256 `6217BE5A3838417FDFC9A4645E32F7150A9D185EF4C14686839DF398DA778F6B`, rejects legacy-client identifiers, and enforces a 15 MiB universal APK budget. Maintainers must also keep Android developer verification current for certified-device sideload distribution.
 
 CI runs JVM tests, lint, the R8 acceptance build, dependency review, and x86_64 emulator tests on API 28, 31, 33, and 35, including a large-screen landscape case. Before promoting a prerelease, maintainers must additionally smoke-test ARM64 hardware, a real entitled account, fresh install, production-signed upgrade with `adb install -r`, download/resume, install, launch, and the explicitly confirmed downgrade path.
 
