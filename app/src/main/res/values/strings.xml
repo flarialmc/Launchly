@@ -54,6 +54,13 @@
     <string name="downgrade_title">Downgrade Minecraft?</string>
     <string name="downgrade_message">Current: %1$s\nTarget: %2$s\n\nAndroid must uninstall the current app first. This may permanently erase Minecraft app data, worlds, and settings that are not backed up.</string>
     <string name="uninstall_and_continue">Uninstall and continue</string>
+    <string name="preparing_installation">Preparing installation</string>
+    <string name="preparing_installation_message">Verifying the APK files and preparing Android’s installer…</string>
+    <string name="installing_minecraft">Installing Minecraft</string>
+    <string name="installation_progress">Android installation: %1$d%%</string>
+    <string name="installation_waiting">Waiting for Android’s installation confirmation…</string>
+    <string name="uninstalling_minecraft">Uninstalling Minecraft</string>
+    <string name="uninstalling_minecraft_message">Waiting for Android to complete the uninstall…</string>
     <string name="operation_failed">Action could not be completed</string>
     <string name="operation_complete">Action completed</string>
     <string name="onboarding_title">Your Minecraft versions, clearly managed.</string>

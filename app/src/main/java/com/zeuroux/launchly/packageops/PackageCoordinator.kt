@@ -45,6 +45,7 @@ sealed interface PackageOperationState {
         val currentVersion: String,
         val targetVersion: String
     ) : PackageOperationState
+    data class Preparing(val versionId: String) : PackageOperationState
     data class Installing(val versionId: String, val progress: Int?) : PackageOperationState
     data class Uninstalling(val targetVersionId: String?) : PackageOperationState
     data class Failure(val message: String) : PackageOperationState
@@ -109,6 +110,11 @@ class AckpinePackageCoordinator(
     }
 
     override suspend fun install(versionId: String) {
+        if (_operation.value is PackageOperationState.Preparing ||
+            _operation.value is PackageOperationState.Installing ||
+            _operation.value is PackageOperationState.Uninstalling
+        ) return
+        _operation.value = PackageOperationState.Preparing(versionId)
         val target = managedVersions.get(versionId)
             ?: return fail("The managed version no longer exists.")
         val installed = installedPackage.value
@@ -155,6 +161,7 @@ class AckpinePackageCoordinator(
             _operation.value = PackageOperationState.PermissionRequired(versionId)
             return
         }
+        _operation.value = PackageOperationState.Preparing(versionId)
         val target = managedVersions.get(versionId) ?: return fail("The target version no longer exists.")
         val files = withContext(Dispatchers.IO) {
             versionDirectory(versionId).listFiles { file -> file.extension.equals("apk", true) }

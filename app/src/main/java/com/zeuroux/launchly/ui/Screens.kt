@@ -289,6 +289,19 @@ internal fun LibraryScreen(
     }
 
     when (val operation = state.operation) {
+        is PackageOperationState.Preparing -> InstallationStatusPopup(
+            title = stringResource(R.string.preparing_installation),
+            message = stringResource(R.string.preparing_installation_message)
+        )
+        is PackageOperationState.Installing -> InstallationStatusPopup(
+            title = stringResource(R.string.installing_minecraft),
+            message = operation.progress?.let { stringResource(R.string.installation_progress, it) }
+                ?: stringResource(R.string.installation_waiting)
+        )
+        is PackageOperationState.Uninstalling -> InstallationStatusPopup(
+            title = stringResource(R.string.uninstalling_minecraft),
+            message = stringResource(R.string.uninstalling_minecraft_message)
+        )
         is PackageOperationState.PermissionRequired -> LaunchlyDialog(
             onDismissRequest = viewModel::dismissOperation,
             title = stringResource(R.string.install_permission_title),
@@ -794,6 +807,24 @@ private fun SettingsLink(text: String, onClick: () -> Unit) {
         Box(Modifier.fillMaxSize().padding(horizontal = 4.dp), contentAlignment = Alignment.CenterStart) {
             Text(text, style = MaterialTheme.typography.labelLarge)
         }
+    }
+}
+
+@Composable
+private fun InstallationStatusPopup(title: String, message: String) {
+    LaunchlyPrompt(
+        onDismissRequest = {},
+        title = title
+    ) {
+        CircularProgressIndicator(
+            color = LaunchlyDesign.Accent,
+            trackColor = LaunchlyDesign.ProgressTrack
+        )
+        Text(
+            message,
+            color = LaunchlyDesign.TextMuted,
+            style = MaterialTheme.typography.bodyLarge
+        )
     }
 }
 
