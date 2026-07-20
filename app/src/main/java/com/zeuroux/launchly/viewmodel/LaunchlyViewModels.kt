@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.zeuroux.launchly.LaunchlyApp
 import com.zeuroux.launchly.auth.AuthState
+import com.zeuroux.launchly.catalog.CatalogSource
 import com.zeuroux.launchly.catalog.CatalogState
 import com.zeuroux.launchly.model.Architecture
 import com.zeuroux.launchly.model.DownloadRecord
@@ -125,20 +126,27 @@ class DownloadsViewModel(application: Application) : AndroidViewModel(applicatio
 data class SettingsUiState(
     val auth: AuthState = AuthState.Loading,
     val canInstallPackages: Boolean = false,
-    val appVersion: String = ""
+    val appVersion: String = "",
+    val catalogSource: String = CatalogSource.DEFAULT_TEMPLATE,
+    val catalogSourceError: String? = null
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val container = (application as LaunchlyApp).container
     private val permissionRefresh = MutableStateFlow(0)
+    private val catalogSourceError = MutableStateFlow<String?>(null)
     val state: StateFlow<SettingsUiState> = combine(
         container.authRepository.state,
-        permissionRefresh
-    ) { auth, _ ->
+        container.preferences.catalogSource,
+        permissionRefresh,
+        catalogSourceError
+    ) { auth, catalogSource, _, sourceError ->
         SettingsUiState(
             auth = auth,
             canInstallPackages = application.packageManager.canRequestPackageInstalls(),
-            appVersion = com.zeuroux.launchly.BuildConfig.VERSION_NAME
+            appVersion = com.zeuroux.launchly.BuildConfig.VERSION_NAME,
+            catalogSource = catalogSource,
+            catalogSourceError = sourceError
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -150,6 +158,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun refreshProfile() = viewModelScope.launch { container.authRepository.refreshProfile() }
 
     fun refreshPermission() { permissionRefresh.value++ }
+
+    fun setCatalogSource(value: String): Boolean {
+        val source = runCatching { CatalogSource.normalize(value) }
+            .getOrElse {
+                catalogSourceError.value = it.message ?: "The catalog URL is invalid."
+                return false
+            }
+        catalogSourceError.value = null
+        viewModelScope.launch {
+            runCatching { container.catalog.setSource(source) }
+                .onFailure { catalogSourceError.value = it.message ?: "The catalog source could not be changed." }
+        }
+        return true
+    }
+
+    fun resetCatalogSource() {
+        setCatalogSource(CatalogSource.DEFAULT_TEMPLATE)
+    }
 }
 
 data class AddVersionUiState(

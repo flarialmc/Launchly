@@ -71,6 +71,12 @@
     <string name="install_permission">Install permission</string>
     <string name="permission_allowed">Allowed</string>
     <string name="permission_not_allowed">Not allowed</string>
+    <string name="version_catalog">Version catalog</string>
+    <string name="catalog_source_description">Choose where Launchly loads compatible Minecraft version codes.</string>
+    <string name="change_catalog_source">Change catalog source</string>
+    <string name="reset_catalog_source">Use default catalog</string>
+    <string name="catalog_source_url">Catalog URL</string>
+    <string name="catalog_source_hint">Use the direct HTTPS URL of a versions.json file. Changing sources clears cached catalog data.</string>
     <string name="about">About</string>
     <string name="version_label">Launchly %1$s</string>
     <string name="source_code">Source code</string>

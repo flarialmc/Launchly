@@ -66,6 +66,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.core.content.ContextCompat
@@ -646,6 +647,7 @@ internal fun SettingsScreen(
     val diagnosticsSavedMessage = stringResource(R.string.diagnostics_saved)
     val diagnosticsFailedMessage = stringResource(R.string.diagnostics_failed)
     val linkUnavailableMessage = stringResource(R.string.link_unavailable)
+    var catalogSourceEditorOpen by rememberSaveable { mutableStateOf(false) }
     val installSettingsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         viewModel.refreshPermission()
     }
@@ -719,6 +721,26 @@ internal fun SettingsScreen(
                 }
             }
         }
+        item { LaunchlySectionTitle(stringResource(R.string.version_catalog)) }
+        item {
+            SettingsCard {
+                Text(stringResource(R.string.catalog_source_description), color = LaunchlyDesign.TextMuted)
+                Text(
+                    state.catalogSource,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag("catalog-source")
+                )
+                state.catalogSourceError?.let { Text(it, color = LaunchlyDesign.Error) }
+                LaunchlySettingsButton(onClick = { catalogSourceEditorOpen = true }) {
+                    Text(stringResource(R.string.change_catalog_source))
+                }
+                LaunchlySettingsButton(onClick = viewModel::resetCatalogSource, primary = false) {
+                    Text(stringResource(R.string.reset_catalog_source))
+                }
+            }
+        }
         item { LaunchlySectionTitle(stringResource(R.string.about)) }
         item {
             SettingsCard {
@@ -741,6 +763,16 @@ internal fun SettingsScreen(
             }
         }
     }
+    if (catalogSourceEditorOpen) {
+        CatalogSourceDialog(
+            currentSource = state.catalogSource,
+            error = state.catalogSourceError,
+            onSave = { source ->
+                if (viewModel.setCatalogSource(source)) catalogSourceEditorOpen = false
+            },
+            onDismiss = { catalogSourceEditorOpen = false }
+        )
+    }
 }
 
 @Composable
@@ -762,6 +794,46 @@ private fun SettingsLink(text: String, onClick: () -> Unit) {
         Box(Modifier.fillMaxSize().padding(horizontal = 4.dp), contentAlignment = Alignment.CenterStart) {
             Text(text, style = MaterialTheme.typography.labelLarge)
         }
+    }
+}
+
+@Composable
+private fun CatalogSourceDialog(
+    currentSource: String,
+    error: String?,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var source by remember(currentSource) { mutableStateOf(currentSource) }
+    LaunchlyPrompt(
+        onDismissRequest = onDismiss,
+        title = stringResource(R.string.change_catalog_source)
+    ) {
+        Text(
+            stringResource(R.string.catalog_source_hint),
+            color = LaunchlyDesign.TextMuted,
+            style = MaterialTheme.typography.bodyMedium
+        )
+        OutlinedTextField(
+            value = source,
+            onValueChange = { source = it },
+            label = { Text(stringResource(R.string.catalog_source_url)) },
+            modifier = Modifier.fillMaxWidth().testTag("catalog-source-input"),
+            minLines = 3,
+            maxLines = 4,
+            colors = launchlyTextFieldColors(),
+            isError = error != null
+        )
+        error?.let { Text(it, color = LaunchlyDesign.Error) }
+        LaunchlyPrimaryButton(
+            onClick = { onSave(source) },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text(stringResource(R.string.save)) }
+        TextButton(
+            onClick = onDismiss,
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            colors = ButtonDefaults.textButtonColors(contentColor = LaunchlyDesign.TextSecondary)
+        ) { Text(stringResource(R.string.cancel)) }
     }
 }
 
