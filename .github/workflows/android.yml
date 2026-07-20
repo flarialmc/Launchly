@@ -2,10 +2,14 @@ name: Android
 
 on:
   push:
-    branches: [master, main]
-    tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      run_instrumented:
+        description: Run the Android emulator test matrix
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -33,7 +37,7 @@ jobs:
             app/build/test-results/
 
   release-apk:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -84,7 +88,7 @@ jobs:
       - uses: actions/dependency-review-action@v4
 
   instrumented:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.run_instrumented
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
