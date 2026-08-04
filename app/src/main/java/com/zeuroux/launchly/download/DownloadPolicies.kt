@@ -6,6 +6,8 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import java.io.File
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.StandardCopyOption
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
@@ -76,6 +78,25 @@ internal object ArtifactCachePolicy {
 
     fun invalidatePartial(partFile: File, validatorFile: File) {
         partFile.delete()
+        validatorFile.delete()
+    }
+
+    fun promoteCompletePartial(partFile: File, finalFile: File, validatorFile: File) {
+        require(partFile.isFile) { "The completed partial APK is missing." }
+        try {
+            java.nio.file.Files.move(
+                partFile.toPath(),
+                finalFile.toPath(),
+                StandardCopyOption.REPLACE_EXISTING,
+                StandardCopyOption.ATOMIC_MOVE
+            )
+        } catch (_: AtomicMoveNotSupportedException) {
+            java.nio.file.Files.move(
+                partFile.toPath(),
+                finalFile.toPath(),
+                StandardCopyOption.REPLACE_EXISTING
+            )
+        }
         validatorFile.delete()
     }
 }

@@ -78,4 +78,31 @@ class AuthRepositoryTest {
         assertEquals(replacement, repository.currentSession())
         scope.cancel()
     }
+
+    @Test
+    fun signOutWaitsForRestorationAndCannotResurrectItsSession() = runBlocking {
+        val restored = CompletableDeferred<AuthSession?>()
+        var cleared = false
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val repository = DefaultAuthRepository(
+            object : AuthStore {
+                override suspend fun read(): AuthSession? = restored.await()
+                override suspend fun write(session: AuthSession) = Unit
+                override suspend fun clear() {
+                    cleared = true
+                }
+            },
+            scope
+        )
+        val old = AuthSession("old@example.test", "old-token", null, null, 1)
+
+        val signingOut = async(start = CoroutineStart.UNDISPATCHED) { repository.signOut() }
+        assertFalse(signingOut.isCompleted)
+        restored.complete(old)
+
+        signingOut.await()
+        assertEquals(true, cleared)
+        assertEquals(null, repository.currentSession())
+        scope.cancel()
+    }
 }

@@ -100,6 +100,24 @@ class DownloadPoliciesTest {
     }
 
     @Test
+    fun completePartialCanBePromotedWithoutValidatorMetadata() {
+        val directory = Files.createTempDirectory("launchly-complete-part").toFile()
+        try {
+            val part = directory.resolve("base.apk.part").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+            val final = directory.resolve("base.apk")
+            val validator = directory.resolve("base.apk.part.meta")
+
+            ArtifactCachePolicy.promoteCompletePartial(part, final, validator)
+
+            assertFalse(part.exists())
+            assertFalse(validator.exists())
+            assertEquals(listOf<Byte>(1, 2, 3), final.readBytes().toList())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
     fun storagePreflightAccountsForResumableBytesAndReserve() {
         val artifacts = listOf(
             GPlayArtifact("https://example.test/base", "base.apk", 100),

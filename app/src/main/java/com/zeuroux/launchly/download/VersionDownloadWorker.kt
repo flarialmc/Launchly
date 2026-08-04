@@ -28,8 +28,6 @@ import okhttp3.Request
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import kotlin.coroutines.coroutineContext
 
 class VersionDownloadWorker(
@@ -67,8 +65,11 @@ class VersionDownloadWorker(
             }
             val total = StoragePolicy.remainingBytes(safeArtifacts) { 0L }
             ensureStorageAvailable(safeArtifacts)
-            val hadCachedFinalApks = versionDirectory().listFiles { file ->
-                file.isFile && file.extension.equals("apk", true)
+            val hadCachedArtifacts = versionDirectory().listFiles { file ->
+                file.isFile && (
+                    file.extension.equals("apk", true) ||
+                        (file.name.endsWith(".apk.part", true) && file.length() > 0L)
+                    )
             }?.isNotEmpty() == true
             var completedBytes = 0L
             for (artifact in safeArtifacts) {
@@ -86,7 +87,7 @@ class VersionDownloadWorker(
                 throw DownloadFailure(
                     "APK_VALIDATION_FAILED",
                     failure.message ?: "The downloaded APK files failed validation.",
-                    retryable = invalidated > 0 && hadCachedFinalApks
+                    retryable = invalidated > 0 && hadCachedArtifacts
                 )
             }
             records.upsert(
@@ -134,12 +135,17 @@ class VersionDownloadWorker(
         val partFile = safeFile(directory, "${artifact.name}.part")
         val validatorFile = safeFile(directory, "${artifact.name}.part.meta")
         if (ArtifactCachePolicy.isReusableFinal(finalFile, artifact.expectedSize)) {
+            ArtifactCachePolicy.invalidatePartial(partFile, validatorFile)
             return@withContext finalFile.length()
         }
         if (finalFile.exists()) finalFile.delete()
 
         var existing = partFile.length().coerceAtLeast(0L)
-        if (artifact.expectedSize > 0 && existing >= artifact.expectedSize) {
+        if (artifact.expectedSize > 0L && existing == artifact.expectedSize) {
+            ArtifactCachePolicy.promoteCompletePartial(partFile, finalFile, validatorFile)
+            return@withContext existing
+        }
+        if (artifact.expectedSize > 0L && existing > artifact.expectedSize) {
             ArtifactCachePolicy.invalidatePartial(partFile, validatorFile)
             existing = 0L
         }
@@ -223,11 +229,7 @@ class VersionDownloadWorker(
                 true
             )
         }
-        Files.move(
-            partFile.toPath(), finalFile.toPath(),
-            StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE
-        )
-        validatorFile.delete()
+        ArtifactCachePolicy.promoteCompletePartial(partFile, finalFile, validatorFile)
         actualSize
     }
 
@@ -289,9 +291,11 @@ class VersionDownloadWorker(
             val partFile = safeFile(directory, "${artifact.name}.part")
             val validatorFile = safeFile(directory, "${artifact.name}.part.meta")
             val partSize = partFile.length()
+            val completePartial = artifact.expectedSize > 0L && partSize == artifact.expectedSize
             val invalidPartial = partFile.exists() && (
-                partSize <= 0L || !validatorFile.isFile ||
-                    (artifact.expectedSize > 0L && partSize >= artifact.expectedSize)
+                partSize <= 0L ||
+                    (artifact.expectedSize > 0L && partSize > artifact.expectedSize) ||
+                    (!completePartial && !validatorFile.isFile)
                 )
             if (invalidPartial) ArtifactCachePolicy.invalidatePartial(partFile, validatorFile)
         }
@@ -303,7 +307,8 @@ class VersionDownloadWorker(
                 val partFile = safeFile(directory, "${artifact.name}.part")
                 val validatorFile = safeFile(directory, "${artifact.name}.part.meta")
                 partFile.length().takeIf {
-                    validatorFile.isFile && it in 1L..artifact.expectedSize
+                    it == artifact.expectedSize ||
+                        (validatorFile.isFile && it > 0L && it < artifact.expectedSize)
                 } ?: 0L
             }
         } ?: return
