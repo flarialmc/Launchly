@@ -221,8 +221,8 @@ internal fun LibraryScreen(
     var pendingDownload by rememberSaveable { mutableStateOf<String?>(null) }
     val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         pendingDownload?.let { id ->
-            if (granted) viewModel.download(id)
-            else scope.launch { snackbar.showSnackbar(notificationPermissionDeniedMessage) }
+            viewModel.download(id)
+            if (!granted) scope.launch { snackbar.showSnackbar(notificationPermissionDeniedMessage) }
         }
         pendingDownload = null
     }

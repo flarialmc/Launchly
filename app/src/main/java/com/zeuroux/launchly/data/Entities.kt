@@ -7,6 +7,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Upsert
 import com.zeuroux.launchly.model.Architecture
 import com.zeuroux.launchly.model.DownloadRecord
 import com.zeuroux.launchly.model.DownloadStatus
@@ -66,7 +67,7 @@ interface ManagedVersionDao {
     @Query("SELECT * FROM managed_versions WHERE id = :id")
     suspend fun get(id: String): ManagedVersionEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsert(value: ManagedVersionEntity)
 
     @Query("DELETE FROM managed_versions WHERE id = :id")

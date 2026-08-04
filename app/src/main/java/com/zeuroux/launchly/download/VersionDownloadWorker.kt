@@ -57,10 +57,19 @@ class VersionDownloadWorker(
             if (artifacts.isEmpty()) throw DownloadFailure("EMPTY_DELIVERY", "Google returned no APK files.")
             val safeArtifacts = try {
                 ArtifactNamePolicy.sanitize(artifacts)
+                    .onEach { ArtifactUrlPolicy.requireHttps(it.url) }
+                    .also(StoragePolicy::validateDelivery)
             } catch (failure: IllegalArgumentException) {
-                throw DownloadFailure("UNSAFE_OR_DUPLICATE_NAME", failure.message ?: "Google returned an invalid APK filename.")
+                throw DownloadFailure(
+                    "UNSAFE_DELIVERY_METADATA",
+                    failure.message ?: "Google returned unsafe APK metadata."
+                )
             }
-            val total = safeArtifacts.map { it.expectedSize }.takeIf { values -> values.all { it > 0L } }?.sum()
+            val total = StoragePolicy.remainingBytes(safeArtifacts) { 0L }
+            ensureStorageAvailable(safeArtifacts)
+            val hadCachedFinalApks = versionDirectory().listFiles { file ->
+                file.isFile && file.extension.equals("apk", true)
+            }?.isNotEmpty() == true
             var completedBytes = 0L
             for (artifact in safeArtifacts) {
                 completedBytes += downloadArtifact(artifact, completedBytes, total)
@@ -68,7 +77,18 @@ class VersionDownloadWorker(
             val apkFiles = versionDirectory().listFiles { file -> file.extension.equals("apk", true) }
                 ?.sortedBy { it.name }
                 .orEmpty()
-            container.apkSetValidator.validate(apkFiles, version.versionCode, version.architecture)
+            try {
+                container.apkSetValidator.validate(apkFiles, version.versionCode, version.architecture)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                val invalidated = ArtifactCachePolicy.invalidateFinalApks(versionDirectory())
+                throw DownloadFailure(
+                    "APK_VALIDATION_FAILED",
+                    failure.message ?: "The downloaded APK files failed validation.",
+                    retryable = invalidated > 0 && hadCachedFinalApks
+                )
+            }
             records.upsert(
                 currentRecord().copy(
                     status = DownloadStatus.READY,
@@ -113,14 +133,14 @@ class VersionDownloadWorker(
         val finalFile = safeFile(directory, artifact.name)
         val partFile = safeFile(directory, "${artifact.name}.part")
         val validatorFile = safeFile(directory, "${artifact.name}.part.meta")
-        if (finalFile.isFile && (artifact.expectedSize <= 0L || finalFile.length() == artifact.expectedSize)) {
+        if (ArtifactCachePolicy.isReusableFinal(finalFile, artifact.expectedSize)) {
             return@withContext finalFile.length()
         }
         if (finalFile.exists()) finalFile.delete()
 
         var existing = partFile.length().coerceAtLeast(0L)
-        if (artifact.expectedSize > 0 && existing > artifact.expectedSize) {
-            partFile.delete()
+        if (artifact.expectedSize > 0 && existing >= artifact.expectedSize) {
+            ArtifactCachePolicy.invalidatePartial(partFile, validatorFile)
             existing = 0L
         }
         val validator = validatorFile.takeIf { existing > 0L && it.isFile }
@@ -129,16 +149,25 @@ class VersionDownloadWorker(
             partFile.delete()
             existing = 0L
         }
-        val request = Request.Builder().url(artifact.url).apply {
+        val request = Request.Builder().url(ArtifactUrlPolicy.requireHttps(artifact.url)).apply {
             if (existing > 0L) {
                 header("Range", "bytes=$existing-")
                 header("If-Range", validator.orEmpty())
             }
         }.build()
+        val streamLimit = StoragePolicy.streamLimit(artifact, alreadyCompleted)
 
-        container.okHttpClient.newCall(request).execute().use { response ->
+        container.downloadHttpClient.newCall(request).execute().use { response ->
             val append = ResumePolicy.canAppend(existing, response.code, response.header("Content-Range"))
             if (!response.isSuccessful) {
+                if (response.code == 416 && existing > 0L) {
+                    ArtifactCachePolicy.invalidatePartial(partFile, validatorFile)
+                    throw DownloadFailure(
+                        "RANGE_REJECTED",
+                        "${artifact.name} could not be resumed and will restart.",
+                        true
+                    )
+                }
                 throw DownloadFailure(
                     "HTTP_${response.code}",
                     "Downloading ${artifact.name} failed with HTTP ${response.code}.",
@@ -147,6 +176,14 @@ class VersionDownloadWorker(
             }
             if (!append) existing = 0L
             val body = response.body ?: throw DownloadFailure("EMPTY_FILE", "${artifact.name} had no response body.")
+            val contentLength = body.contentLength()
+            if (contentLength > 0L && contentLength > streamLimit - existing) {
+                ArtifactCachePolicy.invalidatePartial(partFile, validatorFile)
+                throw DownloadFailure(
+                    "ARTIFACT_TOO_LARGE",
+                    "${artifact.name} exceeded Launchly's download safety limit."
+                )
+            }
             val responseValidator = response.header("ETag") ?: response.header("Last-Modified")
             if (!append && responseValidator.isNullOrBlank()) validatorFile.delete()
             else if (!responseValidator.isNullOrBlank()) validatorFile.writeText(responseValidator)
@@ -160,6 +197,14 @@ class VersionDownloadWorker(
                         val count = input.read(buffer)
                         if (count < 0) break
                         if (count == 0) continue
+                        if (count.toLong() > streamLimit - downloaded) {
+                            output.setLength(0L)
+                            validatorFile.delete()
+                            throw DownloadFailure(
+                                "ARTIFACT_TOO_LARGE",
+                                "${artifact.name} exceeded Launchly's download safety limit."
+                            )
+                        }
                         output.write(buffer, 0, count)
                         downloaded += count
                         publishProgress(alreadyCompleted + downloaded, totalBytes)
@@ -171,6 +216,7 @@ class VersionDownloadWorker(
         val actualSize = partFile.length()
         if (actualSize <= 0L) throw DownloadFailure("EMPTY_FILE", "${artifact.name} was empty.")
         if (artifact.expectedSize > 0L && actualSize != artifact.expectedSize) {
+            ArtifactCachePolicy.invalidatePartial(partFile, validatorFile)
             throw DownloadFailure(
                 "SIZE_MISMATCH",
                 "${artifact.name} was $actualSize bytes; ${artifact.expectedSize} bytes were expected.",
@@ -232,6 +278,43 @@ class VersionDownloadWorker(
     }
 
     private fun versionDirectory() = File(applicationContext.filesDir, "versions/$versionId")
+
+    private fun ensureStorageAvailable(artifacts: List<GPlayArtifact>) {
+        val directory = versionDirectory().apply { mkdirs() }
+        artifacts.forEach { artifact ->
+            val finalFile = safeFile(directory, artifact.name)
+            if (finalFile.exists() && !ArtifactCachePolicy.isReusableFinal(finalFile, artifact.expectedSize)) {
+                finalFile.delete()
+            }
+            val partFile = safeFile(directory, "${artifact.name}.part")
+            val validatorFile = safeFile(directory, "${artifact.name}.part.meta")
+            val partSize = partFile.length()
+            val invalidPartial = partFile.exists() && (
+                partSize <= 0L || !validatorFile.isFile ||
+                    (artifact.expectedSize > 0L && partSize >= artifact.expectedSize)
+                )
+            if (invalidPartial) ArtifactCachePolicy.invalidatePartial(partFile, validatorFile)
+        }
+        val remaining = StoragePolicy.remainingBytes(artifacts) { artifact ->
+            val finalFile = safeFile(directory, artifact.name)
+            if (ArtifactCachePolicy.isReusableFinal(finalFile, artifact.expectedSize)) {
+                finalFile.length()
+            } else {
+                val partFile = safeFile(directory, "${artifact.name}.part")
+                val validatorFile = safeFile(directory, "${artifact.name}.part.meta")
+                partFile.length().takeIf {
+                    validatorFile.isFile && it in 1L..artifact.expectedSize
+                } ?: 0L
+            }
+        } ?: return
+        val available = directory.usableSpace
+        if (!StoragePolicy.hasEnoughSpace(available, remaining)) {
+            throw DownloadFailure(
+                "STORAGE_FULL",
+                "There is not enough storage to download this Minecraft version."
+            )
+        }
+    }
 
     private fun isStorageExhausted(): Boolean = runCatching {
         val storageManager = applicationContext.getSystemService(StorageManager::class.java)

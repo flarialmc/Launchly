@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.zeuroux.launchly.model.Architecture
+import com.zeuroux.launchly.model.DownloadStatus
 import com.zeuroux.launchly.model.ReleaseTrack
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -39,5 +40,23 @@ class ManagedVersionDaoTest {
 
         assertEquals(listOf(version), database.managedVersionDao().observeAll().first())
         assertEquals(emptyList<DownloadRecordEntity>(), database.downloadRecordDao().observeAll().first())
+    }
+
+    @Test
+    fun updatingManagedVersionPreservesDownloadRecord() = runBlocking {
+        val version = ManagedVersionEntity(
+            "22222222-2222-2222-2222-222222222222", "Original", 972604031, "1.26.40.31",
+            ReleaseTrack.BETA, Architecture.ARM64, null, 1, 1
+        )
+        val download = DownloadRecordEntity(
+            version.id, null, DownloadStatus.READY, 100, 100, null, null, null, 1
+        )
+        database.managedVersionDao().upsert(version)
+        database.downloadRecordDao().upsert(download)
+
+        database.managedVersionDao().upsert(version.copy(displayName = "Renamed", updatedAt = 2))
+
+        assertEquals("Renamed", database.managedVersionDao().get(version.id)?.displayName)
+        assertEquals(download, database.downloadRecordDao().get(version.id))
     }
 }

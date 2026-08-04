@@ -81,8 +81,8 @@ class GPlayService(
         GPlayProfile(profile?.name, profile?.email, profile?.artwork?.url)
     }
 
-    private fun authData(): AuthData {
-        val session = authRepository.currentSession()
+    private suspend fun authData(): AuthData {
+        val session = authRepository.awaitSession()
             ?: throw GPlayDeliveryException("AUTH_EXPIRED", "Your Google session expired. Sign in again.", false)
         return AuthHelper.build(
             email = session.email,

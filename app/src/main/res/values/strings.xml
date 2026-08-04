@@ -47,7 +47,7 @@
     <string name="download_speed">%1$s/s</string>
     <string name="download_channel_name">Minecraft downloads</string>
     <string name="downloading_minecraft">Downloading Minecraft</string>
-    <string name="notification_permission_denied">Notification permission is required before starting a persistent download.</string>
+    <string name="notification_permission_denied">Download started. Android may hide its normal notification because notification permission was denied.</string>
     <string name="install_permission_title">Allow app installation</string>
     <string name="install_permission_message">Android must allow Launchly to request package installs before this verified APK set can be installed.</string>
     <string name="open_settings">Open settings</string>
