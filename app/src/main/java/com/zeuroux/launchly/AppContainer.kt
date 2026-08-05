@@ -14,6 +14,7 @@ import com.zeuroux.launchly.data.ManagedVersionRepository
 import com.zeuroux.launchly.data.RoomManagedVersionRepository
 import com.zeuroux.launchly.download.DownloadCoordinator
 import com.zeuroux.launchly.download.WorkManagerDownloadCoordinator
+import com.zeuroux.launchly.download.forPersistentDownloads
 import com.zeuroux.launchly.gplay.GPlayService
 import com.zeuroux.launchly.media.UserImageStore
 import com.zeuroux.launchly.packageops.AckpinePackageCoordinator
@@ -28,6 +29,7 @@ import java.util.concurrent.TimeUnit
 
 interface AppContainer {
     val okHttpClient: OkHttpClient
+    val downloadHttpClient: OkHttpClient
     val database: AppDatabase
     val preferences: AppPreferences
     val authRepository: AuthRepository
@@ -52,6 +54,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
         .followRedirects(true)
         .followSslRedirects(false)
         .build()
+
+    override val downloadHttpClient: OkHttpClient = okHttpClient.forPersistentDownloads()
 
     override val database: AppDatabase = Room.databaseBuilder(
         applicationContext,
