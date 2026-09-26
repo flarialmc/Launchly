@@ -165,7 +165,9 @@ jobs:
         run: |
           mkdir -p release-assets
           cp app/build/outputs/apk/release/app-release.apk release-assets/launchly-${GITHUB_REF_NAME}.apk
-          cp app/build/outputs/mapping/release/mapping.txt release-assets/launchly-${GITHUB_REF_NAME}-mapping.txt
+          if [ -f app/build/outputs/mapping/release/mapping.txt ]; then
+            cp app/build/outputs/mapping/release/mapping.txt release-assets/launchly-${GITHUB_REF_NAME}-mapping.txt
+          fi
           cd release-assets
           sha256sum * > SHA256SUMS.txt
       - name: Publish prerelease
