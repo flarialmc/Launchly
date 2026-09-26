@@ -84,6 +84,6 @@ class AppPreferences(private val context: Context) {
         private val INSTALLER_VERSION_ID = stringPreferencesKey("installer_version_id")
         private const val CATALOG_ETAG_PREFIX = "catalog_etag_"
         const val DEFAULT_CATALOG_SOURCE =
-            "https://cdn.flarial.xyz/Android/versions.json"
+            "https://raw.githubusercontent.com/flarialmc/Launchly/refs/heads/master/catalog/versions.json"
     }
 }

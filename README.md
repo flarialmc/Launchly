@@ -11,6 +11,10 @@ Launchly is an unofficial Android version manager for Minecraft: Bedrock Edition
 
 Launchly is not distributed through Google Play. Release APKs are published through this repository’s GitHub Releases page as prereleases until device and real-account smoke testing is complete.
 
+## Version catalog
+
+Launchly loads Minecraft version codes from [`catalog/versions.json`](catalog/versions.json) in this public fork. Add new Google Play version codes there so installed Launchly builds can pick them up on refresh. Downloads still require an account that owns Minecraft.
+
 ## Build
 
 The project uses JDK 17, Android Gradle Plugin 9.3, Gradle 9.5, built-in Kotlin, Compose, Room, DataStore, and WorkManager.
