@@ -80,7 +80,7 @@ jobs:
 
   dependency-review:
     if: github.event_name == 'pull_request'
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: [self-hosted, Linux, X64, flarial-ci, rajesh-gb-1]
     permissions:
       contents: read
     steps:
