@@ -17,7 +17,7 @@ permissions:
 jobs:
   verify:
     if: github.event_name != 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, flarial-android, rajesh-gb-1]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -38,7 +38,7 @@ jobs:
 
   release-apk:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: [self-hosted, Linux, X64, flarial-android, rajesh-gb-1]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -128,7 +128,7 @@ jobs:
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [verify, release-apk]
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: [self-hosted, Linux, X64, flarial-android, rajesh-gb-1]
     permissions:
       contents: write
     steps:
